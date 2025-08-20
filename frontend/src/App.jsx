@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 
-const socket = io('http://localhost:3001');
+// 🔗 Your backend hosted on Render
+const socket = io('https://chaobi-housie.onrender.com', {
+  transports: ["websocket"],
+});
 
 function App() {
   const [name, setName] = useState('');
@@ -22,7 +25,7 @@ function App() {
     socket.on('number-called', num => {
       setCalledNumbers(prev => [...prev, num]);
 
-      // Play sound
+      // Play sound from /public/sounds/
       const audio = new Audio(`/sounds/${num}.mp3`);
       audio.play().catch(() => {});
     });
