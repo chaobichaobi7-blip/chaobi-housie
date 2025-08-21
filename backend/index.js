@@ -83,14 +83,17 @@ app.post("/join", (req, res) => {
     return res.json({ success: false, error: "Ticket already taken" });
   }
 
-  const newPlayer = { name, ticket };
+  const newTicket = generateTicket();
+
+  const newPlayer = { name, ticket, ticketData: newTicket };
   players.push(newPlayer);
 
   // 🔥 Notify all hosts in real-time
   io.emit("playerJoined", newPlayer);
 
-  res.json({ success: true });
+  res.json({ success: true, ticketData: newTicket });
 });
+
 
 // Host login
 app.post("/host-login", (req, res) => {
