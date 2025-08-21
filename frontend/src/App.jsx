@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import Ticket from "./components/Ticket.jsx";
-
+import Tickets from "./components/Tickets";   // 👈 import here
 
 function App() {
   const [name, setName] = useState("");
@@ -12,21 +11,18 @@ function App() {
 
   const API_BASE = "https://your-backend-url.onrender.com";
 
-  // 🔗 Connect socket
   useEffect(() => {
     const socket = io(API_BASE);
 
-    // Listen for new players
     socket.on("playerJoined", (player) => {
       setPlayers((prev) => [...prev, player]);
     });
 
-    return () => {
-      socket.disconnect();
-    };
+    fetchPlayers();
+
+    return () => socket.disconnect();
   }, []);
 
-  // Join as player
   const joinGame = async () => {
     try {
       const res = await fetch(`${API_BASE}/join`, {
@@ -34,7 +30,6 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, ticket }),
       });
-
       const data = await res.json();
       if (data.success) {
         alert("Joined game successfully!");
@@ -43,11 +38,9 @@ function App() {
       }
     } catch (err) {
       console.error("Join error:", err);
-      alert("Error joining game");
     }
   };
 
-  // Host login
   const loginHost = async () => {
     try {
       const res = await fetch(`${API_BASE}/host-login`, {
@@ -55,7 +48,6 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-
       const data = await res.json();
       if (data.success) {
         setIsHost(true);
@@ -68,7 +60,6 @@ function App() {
     }
   };
 
-  // Get all players (initial fetch for host)
   const fetchPlayers = async () => {
     try {
       const res = await fetch(`${API_BASE}/players`);
@@ -109,19 +100,8 @@ function App() {
         <button onClick={loginHost}>Login as Host</button>
       </div>
 
-      {/* Host View */}
-      {isHost && (
-        <div style={{ marginTop: "30px" }}>
-          <h2>Players Joined</h2>
-          <ul>
-            {players.map((p, idx) => (
-              <li key={idx}>
-                {p.name} ({p.ticket})
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* ✅ Player list in separate component */}
+      <Tickets players={players} />
     </div>
   );
 }
