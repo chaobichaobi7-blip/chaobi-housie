@@ -97,7 +97,7 @@ function App() {
       />
 
       {/* ✅ Player list (visible to everyone) */}
-      <Tickets players={players} />
+      <Ticket players={players} />
     </div>
   );
 }
