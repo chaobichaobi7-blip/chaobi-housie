@@ -9,7 +9,6 @@ app.get("/", (req, res) => {
   res.send("🎉 Housie game server is running!");
 });
 
-
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
@@ -34,6 +33,7 @@ const PRIZES = [
 ];
 
 let prizeWinners = {};
+let sharedPrizesEnabled = false; // ✅ toggle for shared prizes
 
 io.on('connection', (socket) => {
   console.log(`✅ User connected: ${socket.id}`);
@@ -97,14 +97,18 @@ io.on('connection', (socket) => {
     calledNumbers = [];
     winnersCount = 0;
     prizeWinners = {};
-
-    players.forEach(p => {
-      p.winner = false;
-      p.marked = [];
-    });
+    ticketCounter = 0;
+    players = [];
+    hostId = null;
 
     io.emit('game-reset');
-    console.log("♻️ Game has been reset by host");
+    console.log("♻️ Game has been fully reset by host");
+  });
+
+  socket.on('toggle-shared-prizes', (enabled) => {
+    if (socket.id !== hostId) return;
+    sharedPrizesEnabled = enabled;
+    io.emit('shared-prizes-updated', enabled);
   });
 
   socket.on('disconnect', () => {
@@ -146,7 +150,7 @@ function checkPrizes() {
     const flatNumbers = p.ticket.flat().filter(n => n !== null);
 
     // Quick Five
-    if (!prizeWinners["Quick Five"]) {
+    if (!prizeWinners["Quick Five"] || sharedPrizesEnabled) {
       const matched = flatNumbers.filter(n => calledNumbers.includes(n));
       if (matched.length >= 5) {
         declareWinner("Quick Five", p);
@@ -154,23 +158,26 @@ function checkPrizes() {
     }
 
     // First Line
-    if (!prizeWinners["First Line"] && p.ticket[0].filter(n => n).every(num => calledNumbers.includes(num))) {
+    if ((!prizeWinners["First Line"] || sharedPrizesEnabled) &&
+      p.ticket[0].filter(n => n).every(num => calledNumbers.includes(num))) {
       declareWinner("First Line", p);
     }
 
     // Second Line
-    if (!prizeWinners["Second Line"] && p.ticket[1].filter(n => n).every(num => calledNumbers.includes(num))) {
+    if ((!prizeWinners["Second Line"] || sharedPrizesEnabled) &&
+      p.ticket[1].filter(n => n).every(num => calledNumbers.includes(num))) {
       declareWinner("Second Line", p);
     }
 
     // Third Line
-    if (!prizeWinners["Third Line"] && p.ticket[2].filter(n => n).every(num => calledNumbers.includes(num))) {
+    if ((!prizeWinners["Third Line"] || sharedPrizesEnabled) &&
+      p.ticket[2].filter(n => n).every(num => calledNumbers.includes(num))) {
       declareWinner("Third Line", p);
     }
 
     // Full Houses
     if (flatNumbers.every(num => calledNumbers.includes(num))) {
-      const fullHouses = PRIZES.filter(pz => pz.includes("Full House") && !prizeWinners[pz]);
+      const fullHouses = PRIZES.filter(pz => pz.includes("Full House") && (!prizeWinners[pz] || sharedPrizesEnabled));
       if (fullHouses.length > 0) {
         declareWinner(fullHouses[0], p);
       }
@@ -179,8 +186,10 @@ function checkPrizes() {
 }
 
 function declareWinner(prize, player) {
-  if (prizeWinners[prize]) return;
-  prizeWinners[prize] = player;
+  if (!sharedPrizesEnabled && prizeWinners[prize]) return;
+  if (!prizeWinners[prize]) prizeWinners[prize] = [];
+
+  prizeWinners[prize].push(player);
   winnersCount++;
   io.emit('winner', { prize, name: player.name, ticketNumber: player.ticketNumber });
 }
