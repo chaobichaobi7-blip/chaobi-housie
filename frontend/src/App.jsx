@@ -76,49 +76,24 @@ function App() {
     }
   };
 
-  return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>CHAOBI HOUSIE</h1>
-
-      {/* Player Join */}
-      <JoinForm
-        name={name}
-        setName={setName}
-        ticket={ticket}
-        setTicket={setTicket}
-        joinGame={joinGame}
-      />
-
-      {/* Host Login */}
-      <HostLogin
-        password={password}
-        setPassword={setPassword}
-        loginHost={loginHost}
-      />
-
-      {/* ✅ Player list (visible to everyone) */}
-      <Ticket players={players} />
-    </div>
-    {/* Player Ticket */}
-{ticketNumbers && (
-  <div style={{ marginTop: "20px" }}>
-    <h2>Your Ticket</h2>
-    <table border="1" style={{ margin: "auto" }}>
-      <tbody>
-        {ticketNumbers.map((row, rIdx) => (
-          <tr key={rIdx}>
-            {row.map((num, cIdx) => (
-              <td key={cIdx} style={{ padding: "10px", width: "40px" }}>
-                {num || ""}
-              </td>
+  {ticketNumbers && (
+      <div style={{ marginTop: "20px" }}>
+        <h2>Your Ticket</h2>
+        <table border="1" style={{ margin: "auto" }}>
+          <tbody>
+            {ticketNumbers.map((row, rIdx) => (
+              <tr key={rIdx}>
+                {row.map((num, cIdx) => (
+                  <td key={cIdx} style={{ padding: "10px", width: "40px" }}>
+                    {num || ""}
+                  </td>
+                ))}
+              </tr>
             ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)}
-  );
+          </tbody>
+        </table>
+      </div>
+)};
 }
 
 export default App;
