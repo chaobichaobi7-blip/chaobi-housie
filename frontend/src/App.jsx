@@ -10,6 +10,7 @@ function App() {
   const [password, setPassword] = useState("");
   const [players, setPlayers] = useState([]);
   const [isHost, setIsHost] = useState(false);
+  const [ticketNumbers, setTicketNumbers] = useState(null);
 
   const API_BASE = "https://chaobi-housie.onrender.com";
 
@@ -26,22 +27,25 @@ function App() {
   }, []);
 
   const joinGame = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/join`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, ticket }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Joined game successfully!");
-      } else {
-        alert(data.error || "Failed to join");
-      }
-    } catch (err) {
-      console.error("Join error:", err);
+  try {
+    const res = await fetch(`${API_BASE}/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, ticket }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setTicketNumbers(data.ticketData); // 🎟️ save full ticket
+      alert("Joined game successfully!");
+    } else {
+      alert(data.error || "Failed to join");
     }
-  };
+  } catch (err) {
+    console.error("Join error:", err);
+    alert("Error joining game");
+  }
+};
 
   const loginHost = async () => {
     try {
