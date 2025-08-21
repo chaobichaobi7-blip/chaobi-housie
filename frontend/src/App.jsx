@@ -1,201 +1,142 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
-import "./App.css";
 
-// 🔗 Connect to your deployed backend
-const socket = io("https://chaobi-housie.onrender.com");
+const socket = io("https://your-backend-url.onrender.com"); // change to your backend URL
 
 function App() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [hasJoined, setHasJoined] = useState(false);
-  const [ticket, setTicket] = useState(null);
-  const [ticketNumber, setTicketNumber] = useState(null);
-  const [calledNumbers, setCalledNumbers] = useState([]);
-  const [isHost, setIsHost] = useState(false);
-  const [playersList, setPlayersList] = useState([]);
-  const [winners, setWinners] = useState([]);
-  const [prizes, setPrizes] = useState([]);
-  const [currentNumber, setCurrentNumber] = useState(null);
+  const [players, setPlayers] = useState([]);
+  const [takenTickets, setTakenTickets] = useState([]);
+  const [myTicket, setMyTicket] = useState(null);
 
   useEffect(() => {
-    socket.on("ticket", setTicket);
-    socket.on("ticket-number", setTicketNumber);
-
-    socket.on("number-called", (num) => {
-      setCalledNumbers((prev) => [...prev, num]);
-      setCurrentNumber(num);
-
-      // Play sound (optional)
-      const audio = new Audio(`/sounds/${num}.mp3`);
-      audio.play().catch(() => {});
+    socket.on("playersUpdate", (updatedPlayers) => {
+      setPlayers(updatedPlayers);
     });
 
-    socket.on("game-started", (data) => {
-      setCalledNumbers([]);
-      setWinners([]);
-      setPrizes(data.prizes);
-      setCurrentNumber(null);
-      alert("🎯 Game Started!");
+    socket.on("ticketsUpdate", (tickets) => {
+      setTakenTickets(tickets);
     });
 
-    socket.on("game-reset", () => {
-      setCalledNumbers([]);
-      setWinners([]);
-      setCurrentNumber(null);
-      alert("♻️ Game Reset! Waiting for host to start.");
+    socket.on("ticketError", (msg) => {
+      alert(msg);
     });
 
-    socket.on("game-ended", () => alert("🏁 Game Ended!"));
-    socket.on("players-list", setPlayersList);
-    socket.on("winner", (data) => setWinners((prev) => [...prev, data]));
-    socket.on("error-message", alert);
+    socket.on("gameReset", () => {
+      setPlayers([]);
+      setTakenTickets([]);
+      setMyTicket(null);
+      setHasJoined(false);
+    });
 
     return () => {
-      socket.off();
+      socket.off("playersUpdate");
+      socket.off("ticketsUpdate");
+      socket.off("ticketError");
+      socket.off("gameReset");
     };
   }, []);
 
   const joinGame = () => {
-    if (!name.trim()) return;
-    socket.emit("join", { name, password });
-    if (password === "admin123") setIsHost(true);
+    if (name.trim() === "") return alert("Enter your name");
+    socket.emit("joinGame", { name, password });
     setHasJoined(true);
   };
 
-  return (
-    <div className="App">
-      {/* HEADER */}
-      <div className="header">
-        <img src="/trophy.png" alt="trophy" className="trophy" />
-        <h1>CHAOBI HOUSIE</h1>
-        <p>Chance to win ultimate prize</p>
-      </div>
+  const selectTicket = (ticketNumber) => {
+    socket.emit("selectTicket", ticketNumber);
+    setMyTicket(ticketNumber);
+  };
 
-      {/* JOIN FORM */}
-      {!hasJoined && (
-        <div className="join-box">
+  const resetGame = () => {
+    socket.emit("resetGame");
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center bg-gray-100">
+      <header className="bg-yellow-400 w-full text-center py-6 shadow-md">
+        <h1 className="text-3xl font-bold">CHAOBI HOUSIE</h1>
+        <p className="text-lg">Chance to win ultimate prize</p>
+      </header>
+
+      {!hasJoined ? (
+        <div className="mt-8 p-4 bg-white rounded-xl shadow-md">
           <input
-            placeholder="Your Name"
+            type="text"
+            placeholder="Enter your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className="border p-2 mr-2 rounded"
           />
           <input
             type="password"
-            placeholder="Password (Host only)"
+            placeholder="Password (for host)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="border p-2 mr-2 rounded"
           />
-          <button onClick={joinGame}>Join Game</button>
-        </div>
-      )}
-
-      {/* HOST CONTROLS */}
-      {isHost && (
-        <div className="host-controls">
           <button
-            onClick={() => socket.emit("start-game")}
-            className="start-btn"
+            onClick={joinGame}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            ▶️ Start Game
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm("Are you sure you want to reset the game?")) {
-                socket.emit("reset-game");
-              }
-            }}
-            className="reset-btn"
-          >
-            ♻️ Reset Game
+            Join Game
           </button>
         </div>
-      )}
-
-      {/* CURRENT NUMBER */}
-      {currentNumber && (
-        <div className="current-number">
-          <h2>🎲 Current Number: {currentNumber}</h2>
-        </div>
-      )}
-
-      {/* MY TICKET */}
-      {ticket && (
-        <div className="my-ticket">
-          <h3>
-            🎟 My Ticket (#{String(ticketNumber).padStart(3, "0")})
-          </h3>
-          {ticket.map((row, ri) => (
-            <div key={ri} className="row">
-              {row.map((num, ci) => (
-                <div
-                  key={ci}
-                  className={`cell ${
-                    calledNumbers.includes(num) ? "marked" : ""
-                  }`}
-                >
-                  {num || ""}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ALL PLAYERS LIST */}
-      {playersList.length > 0 && (
-        <div className="player-list">
-          <h3>📋 All Players</h3>
-          {playersList.map((p, i) => (
-            <div key={i} className="player-ticket">
-              <strong>{p.name}</strong> (Ticket #
-              {String(p.ticketNumber).padStart(3, "0")})
-              <div className="ticket">
-                {p.ticket.map((row, ri) => (
-                  <div key={ri} className="row">
-                    {row.map((num, ci) => (
-                      <div
-                        key={ci}
-                        className={`cell ${
-                          calledNumbers.includes(num) ? "marked" : ""
-                        }`}
-                      >
-                        {num || ""}
-                      </div>
-                    ))}
-                  </div>
+      ) : (
+        <div className="mt-6 w-11/12 max-w-5xl">
+          {/* Ticket selection */}
+          {!myTicket && (
+            <div>
+              <h3 className="font-bold text-xl mb-2">Select Your Ticket (1–600)</h3>
+              <div className="grid grid-cols-10 gap-2 max-h-[400px] overflow-y-scroll border p-2 rounded bg-white">
+                {Array.from({ length: 600 }, (_, i) => i + 1).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => selectTicket(num)}
+                    disabled={takenTickets.includes(num)}
+                    className={`p-2 rounded text-sm ${
+                      takenTickets.includes(num)
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-green-500 hover:bg-green-600 text-white"
+                    }`}
+                  >
+                    {num}
+                  </button>
                 ))}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* WINNERS */}
-      {winners.length > 0 && (
-        <div className="winners">
-          <h3>🎉 Winners</h3>
-          {winners.map((w, i) => (
-            <div key={i}>
-              🏅 {w.prize} → {w.name} (Ticket #
-              {String(w.ticketNumber).padStart(3, "0")})
+          {myTicket && (
+            <div className="mt-4 p-4 bg-green-100 rounded-xl shadow">
+              <h3 className="font-bold text-lg">Your Ticket: {myTicket}</h3>
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* PRIZES LIST */}
-      {prizes.length > 0 && (
-        <div className="prizes">
-          <h3>🏆 Prizes</h3>
-          {prizes.map((pz, i) => {
-            const won = winners.find((w) => w.prize === pz);
-            return (
-              <div key={i} className={won ? "won" : "pending"}>
-                {pz} {won ? `✅ Won by ${won.name}` : "⏳ Yet to be won"}
-              </div>
-            );
-          })}
+          {/* Players list */}
+          <div className="mt-6 bg-white p-4 rounded-xl shadow">
+            <h3 className="font-bold text-xl mb-2">Players</h3>
+            <ul>
+              {players.map((p, idx) => (
+                <li key={idx} className="py-1">
+                  {p.name} {p.ticket && `(Ticket #${p.ticket})`}
+                  {p.isHost && " 👑"}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Reset button only for host */}
+          {players.find((p) => p.name === name && p.isHost) && (
+            <button
+              onClick={resetGame}
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              Reset Game
+            </button>
+          )}
         </div>
       )}
     </div>
