@@ -1,226 +1,121 @@
-const express = require('express');
-const http = require('http');
-const cors = require('cors');
-const { Server } = require('socket.io');
+// index.js (Backend for Render)
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import cors from "cors";
 
 const app = express();
 app.use(cors());
-app.get("/", (req, res) => {
-  res.send("🎉 Housie game server is running!");
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
-
+// ---- GAME STATE ----
 let players = [];
 let calledNumbers = [];
-let gameStarted = false;
-let ticketCounter = 0;
-const MAX_TICKETS = 600;
-const HOST_PASSWORD = "admin123";
-let hostId = null;
-let winnersCount = 0;
-let numberInterval = null;
+let currentNumber = null;
+let prizes = ["Line 1", "Line 2", "Line 3", "Corners", "Full House"];
+let winners = [];
 
-const PRIZES = [
-  "Quick Five",
-  "First Line",
-  "Second Line",
-  "Third Line",
-  "Full House 1",
-  "Full House 2",
-  "Full House 3",
-];
-
-let prizeWinners = {};
-let sharedPrizesEnabled = false; // ✅ toggle for shared prizes
-
-io.on('connection', (socket) => {
-  console.log(`✅ User connected: ${socket.id}`);
-
-  socket.on('join', ({ name, password }) => {
-    if (ticketCounter >= MAX_TICKETS) {
-      socket.emit('error-message', 'Maximum number of tickets reached (600)');
-      return;
-    }
-
-    if (!hostId && password === HOST_PASSWORD) {
-      hostId = socket.id;
-      console.log("🎯 Host joined");
-    }
-
-    const ticket = generateTicket();
-    const ticketNumber = ++ticketCounter;
-
-    const player = {
-      id: socket.id,
-      name,
-      ticket,
-      ticketNumber,
-      marked: [],
-      winner: false,
-    };
-
-    players.push(player);
-
-    socket.emit('ticket', ticket);
-    socket.emit('ticket-number', ticketNumber);
-
-    io.emit('players-list', players.map(p => ({
-      name: p.name,
-      ticketNumber: p.ticketNumber,
-      ticket: p.ticket
-    })));
-  });
-
-  socket.on('start-game', () => {
-    if (socket.id !== hostId) return;
-    if (gameStarted) return;
-
-    gameStarted = true;
-    calledNumbers = [];
-    winnersCount = 0;
-    prizeWinners = {};
-    io.emit('game-started', { prizes: PRIZES });
-    startAutoNumberCalling();
-  });
-
-  socket.on('reset-game', () => {
-    if (socket.id !== hostId) return;
-
-    if (numberInterval) {
-      clearInterval(numberInterval);
-      numberInterval = null;
-    }
-
-    gameStarted = false;
-    calledNumbers = [];
-    winnersCount = 0;
-    prizeWinners = {};
-    ticketCounter = 0;
-    players = [];
-    hostId = null;
-
-    io.emit('game-reset');
-    console.log("♻️ Game has been fully reset by host");
-  });
-
-  socket.on('toggle-shared-prizes', (enabled) => {
-    if (socket.id !== hostId) return;
-    sharedPrizesEnabled = enabled;
-    io.emit('shared-prizes-updated', enabled);
-  });
-
-  socket.on('disconnect', () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
-    players = players.filter(p => p.id !== socket.id);
-    if (socket.id === hostId) hostId = null;
-
-    io.emit('players-list', players.map(p => ({
-      name: p.name,
-      ticketNumber: p.ticketNumber,
-      ticket: p.ticket
-    })));
-  });
-});
-
-function startAutoNumberCalling() {
-  numberInterval = setInterval(() => {
-    if (winnersCount >= PRIZES.length || calledNumbers.length >= 90) {
-      clearInterval(numberInterval);
-      numberInterval = null;
-      io.emit('game-ended');
-      return;
-    }
-
-    let next;
-    do {
-      next = Math.floor(Math.random() * 90) + 1;
-    } while (calledNumbers.includes(next));
-
-    calledNumbers.push(next);
-    io.emit('number-called', next);
-
-    checkPrizes();
-  }, 5000);
-}
-
-function checkPrizes() {
-  players.forEach(p => {
-    const flatNumbers = p.ticket.flat().filter(n => n !== null);
-
-    // Quick Five
-    if (!prizeWinners["Quick Five"] || sharedPrizesEnabled) {
-      const matched = flatNumbers.filter(n => calledNumbers.includes(n));
-      if (matched.length >= 5) {
-        declareWinner("Quick Five", p);
-      }
-    }
-
-    // First Line
-    if ((!prizeWinners["First Line"] || sharedPrizesEnabled) &&
-      p.ticket[0].filter(n => n).every(num => calledNumbers.includes(num))) {
-      declareWinner("First Line", p);
-    }
-
-    // Second Line
-    if ((!prizeWinners["Second Line"] || sharedPrizesEnabled) &&
-      p.ticket[1].filter(n => n).every(num => calledNumbers.includes(num))) {
-      declareWinner("Second Line", p);
-    }
-
-    // Third Line
-    if ((!prizeWinners["Third Line"] || sharedPrizesEnabled) &&
-      p.ticket[2].filter(n => n).every(num => calledNumbers.includes(num))) {
-      declareWinner("Third Line", p);
-    }
-
-    // Full Houses
-    if (flatNumbers.every(num => calledNumbers.includes(num))) {
-      const fullHouses = PRIZES.filter(pz => pz.includes("Full House") && (!prizeWinners[pz] || sharedPrizesEnabled));
-      if (fullHouses.length > 0) {
-        declareWinner(fullHouses[0], p);
-      }
-    }
-  });
-}
-
-function declareWinner(prize, player) {
-  if (!sharedPrizesEnabled && prizeWinners[prize]) return;
-  if (!prizeWinners[prize]) prizeWinners[prize] = [];
-
-  prizeWinners[prize].push(player);
-  winnersCount++;
-  io.emit('winner', { prize, name: player.name, ticketNumber: player.ticketNumber });
-}
-
+// ---- UTILITIES ----
 function generateTicket() {
-  const ticket = Array.from({ length: 3 }, () => Array(9).fill(null));
-  const columnRanges = [
-    [1, 9], [10, 19], [20, 29], [30, 39], [40, 49],
-    [50, 59], [60, 69], [70, 79], [80, 90]
-  ];
-  let usedNumbers = new Set();
+  let ticket = Array.from({ length: 3 }, () => Array(9).fill(null));
+  let available = Array.from({ length: 90 }, (_, i) => i + 1);
 
   for (let row = 0; row < 3; row++) {
-    let filled = 0;
-    while (filled < 5) {
-      const col = Math.floor(Math.random() * 9);
-      if (ticket[row][col] !== null) continue;
+    let nums = available.splice(0, 9);
+    nums = nums.sort(() => Math.random() - 0.5).slice(0, 5).sort((a, b) => a - b);
 
-      const [min, max] = columnRanges[col];
-      let num;
-      do {
-        num = Math.floor(Math.random() * (max - min + 1)) + min;
-      } while (usedNumbers.has(num));
-
-      ticket[row][col] = num;
-      usedNumbers.add(num);
-      filled++;
+    let positions = [];
+    while (positions.length < 5) {
+      let pos = Math.floor(Math.random() * 9);
+      if (!positions.includes(pos)) positions.push(pos);
     }
+
+    positions.forEach((pos, i) => {
+      ticket[row][pos] = nums[i];
+    });
   }
   return ticket;
 }
 
-const PORT = process.env.PORT || 3001;
+// ---- SOCKET EVENTS ----
+io.on("connection", (socket) => {
+  console.log("🟢 A user connected");
+
+  socket.on("join", ({ name, password }) => {
+    const ticket = generateTicket();
+    const ticketNumber = players.length + 1;
+
+    const player = { id: socket.id, name, ticket, ticketNumber };
+    players.push(player);
+
+    socket.emit("ticket", ticket);
+    socket.emit("ticket-number", ticketNumber);
+
+    io.emit("players-list", players.map(p => ({
+      name: p.name,
+      ticket: p.ticket,
+      ticketNumber: p.ticketNumber
+    })));
+
+    console.log(`👤 ${name} joined with Ticket #${ticketNumber}`);
+  });
+
+  socket.on("start-game", () => {
+    calledNumbers = [];
+    currentNumber = null;
+    winners = [];
+    io.emit("game-started", { prizes });
+  });
+
+  socket.on("call-number", () => {
+    if (calledNumbers.length >= 90) return;
+
+    let available = Array.from({ length: 90 }, (_, i) => i + 1).filter(
+      (n) => !calledNumbers.includes(n)
+    );
+
+    let num = available[Math.floor(Math.random() * available.length)];
+    calledNumbers.push(num);
+    currentNumber = num;
+
+    io.emit("number-called", num);
+    io.emit("update-board", { calledNumbers, currentNumber });
+  });
+
+  socket.on("claim-prize", ({ prize }) => {
+    if (winners.find(w => w.prize === prize)) {
+      socket.emit("error-message", "❌ Prize already claimed!");
+      return;
+    }
+
+    let player = players.find(p => p.id === socket.id);
+    if (player) {
+      const win = { name: player.name, ticketNumber: player.ticketNumber, prize };
+      winners.push(win);
+      io.emit("winner", win);
+    }
+  });
+
+  socket.on("reset-game", () => {
+    players = [];
+    calledNumbers = [];
+    currentNumber = null;
+    winners = [];
+    io.emit("game-reset");
+  });
+
+  socket.on("disconnect", () => {
+    players = players.filter((p) => p.id !== socket.id);
+    io.emit("players-list", players);
+    console.log("🔴 A user disconnected");
+  });
+});
+
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
