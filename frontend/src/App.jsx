@@ -11,7 +11,7 @@ function App() {
   const [players, setPlayers] = useState([]);
   const [isHost, setIsHost] = useState(false);
 
-  const API_BASE = "https://your-backend-url.onrender.com";
+  const API_BASE = "https://chaobi-housie.onrender.com";
 
   useEffect(() => {
     const socket = io(API_BASE);
