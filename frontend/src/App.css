@@ -1,107 +1,129 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
 .App {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .header {
-  margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 16px;
 }
-
 .trophy {
-  width: 60px;
+  width: 64px;
+  height: 64px;
 }
-
-.join-box input {
-  display: block;
-  margin: 5px auto;
-  padding: 8px;
+.join-box {
+  display: grid;
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto 16px;
 }
-
-.join-box button {
-  padding: 8px 16px;
-  margin-top: 10px;
+.join-box input, .join-box select, .join-box button {
+  padding: 10px;
+  font-size: 16px;
+}
+.join-box .inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .host-controls {
-  margin: 15px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 12px 0 20px;
 }
-
-.start-btn {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin-right: 10px;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-.reset-btn {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-.player-list {
-  margin: 20px auto;
-  max-width: 700px;
-  text-align: left;
-}
-
-.player-ticket {
-  margin-bottom: 20px;
-  padding: 10px;
-  border: 1px solid #ddd;
+.start-btn, .reset-btn {
+  padding: 10px 14px;
+  font-size: 16px;
+  border: 0;
   border-radius: 8px;
-  background: #f9f9f9;
+  cursor: pointer;
+}
+.start-btn { background: #3b82f6; color: #fff; }
+.reset-btn { background: #ef4444; color: #fff; }
+
+.dashboard {
+  margin: 10px 0 20px;
+  text-align: center;
+}
+.latest {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+.latest span {
+  color: #e63946;
+}
+.numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.num-cell {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-weight: bold;
+  background: #f8f8f8;
+}
+.num-cell.called {
+  background: #4caf50;
+  color: white;
+  border-color: #388e3c;
+}
+
+.my-tickets, .player-list, .winners, .prizes {
+  margin: 18px 0;
 }
 
 .ticket {
-  display: grid;
-  grid-template-rows: repeat(3, 1fr);
+  display: inline-block;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  margin: 10px 10px 18px 0;
+  padding: 10px;
+  background: #fff;
 }
-
-.ticket .row {
+.row {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(9, 32px);
+  gap: 4px;
+  margin: 3px 0;
 }
-
-.ticket .cell {
-  border: 1px solid #ddd;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
+.cell {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
   background: #fafafa;
-  transition: all 0.3s ease;
+  font-weight: 600;
 }
-
-.ticket .cell.marked {
-  background: #28a745;
+.cell.marked {
+  background: #4caf50;
   color: white;
-  font-weight: bold;
-  transform: scale(1.1);
-  box-shadow: 0 0 5px rgba(0,0,0,0.2);
 }
 
-.winners {
-  margin-top: 20px;
+.player {
+  margin-bottom: 12px;
 }
 
-.prizes {
-  margin-top: 20px;
+.prize-item {
+  padding: 8px;
+  border-radius: 8px;
+  margin: 6px 0;
 }
+.prize-item.pending { background: #fff7ed; border: 1px solid #fed7aa; }
+.prize-item.won { background: #ecfdf5; border: 1px solid #a7f3d0; }
 
-.prizes .won {
-  color: green;
-  font-weight: bold;
-}
-
-.prizes .pending {
-  color: orange;
-}
+.winner-line { margin: 4px 0; }
