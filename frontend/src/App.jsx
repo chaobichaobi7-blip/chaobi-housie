@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import Ticket from "./components/Ticket.jsx";
+
 
 function App() {
   const [name, setName] = useState("");
