@@ -20,6 +20,60 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
+function generateTicket() {
+  // 3 rows × 9 columns
+  let ticket = Array.from({ length: 3 }, () => Array(9).fill(null));
+
+  // Each column has a number range
+  const ranges = [
+    [1, 9], [10, 19], [20, 29], [30, 39], [40, 49],
+    [50, 59], [60, 69], [70, 79], [80, 90]
+  ];
+
+  // Pick numbers for each column
+  let colNumbers = ranges.map(([min, max]) => {
+    let nums = [];
+    for (let i = min; i <= max; i++) nums.push(i);
+    return nums;
+  });
+
+  // Fill 15 numbers total
+  let count = 0;
+  while (count < 15) {
+    let col = Math.floor(Math.random() * 9);
+    if (ticket[0][col] && ticket[1][col] && ticket[2][col]) continue; // full column
+
+    let row = Math.floor(Math.random() * 3);
+    if (ticket[row][col]) continue; // already filled
+
+    if (colNumbers[col].length === 0) continue; // no more numbers in this column
+
+    let numIdx = Math.floor(Math.random() * colNumbers[col].length);
+    let num = colNumbers[col][numIdx];
+    colNumbers[col].splice(numIdx, 1);
+
+    ticket[row][col] = num;
+    count++;
+  }
+
+  // Sort each column
+  for (let c = 0; c < 9; c++) {
+    let colVals = [];
+    for (let r = 0; r < 3; r++) {
+      if (ticket[r][c]) colVals.push(ticket[r][c]);
+    }
+    colVals.sort((a, b) => a - b);
+    let idx = 0;
+    for (let r = 0; r < 3; r++) {
+      if (ticket[r][c]) {
+        ticket[r][c] = colVals[idx++];
+      }
+    }
+  }
+
+  return ticket;
+}
+
 
 // Player joins
 app.post("/join", (req, res) => {
