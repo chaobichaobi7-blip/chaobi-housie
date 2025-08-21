@@ -137,7 +137,33 @@ function App() {
             </div>
           ))}
         </div>
-      )}
+      {playersList.length > 0 && (
+  <div className="all-tickets">
+    <h3>🎫 All Tickets</h3>
+    {playersList.map((player, i) => (
+      <div key={i} className="player-ticket">
+        <h4>
+          {player.name} (Ticket #{String(player.ticketNumber).padStart(3, "0")})
+        </h4>
+        {player.ticket.map((row, ri) => (
+          <div key={ri} className="row">
+            {row.map((num, ci) => (
+              <div
+                key={ci}
+                className={`cell ${
+                  calledNumbers.includes(num) ? "marked" : ""
+                }`}
+              >
+                {num || ""}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>
+)}
+
 
       {winners.length > 0 && (
         <div className="winners">
