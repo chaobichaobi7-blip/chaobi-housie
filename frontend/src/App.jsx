@@ -27,25 +27,25 @@ function App() {
   }, []);
 
   const joinGame = async () => {
-  try {
-    const res = await fetch(`${API_BASE}/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, ticket }),
-    });
+    try {
+      const res = await fetch(`${API_BASE}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, ticket }),
+      });
 
-    const data = await res.json();
-    if (data.success) {
-      setTicketNumbers(data.ticketData); // 🎟️ save full ticket
-      alert("Joined game successfully!");
-    } else {
-      alert(data.error || "Failed to join");
+      const data = await res.json();
+      if (data.success) {
+        setTicketNumbers(data.ticketData); // 🎟️ save full ticket
+        alert("Joined game successfully!");
+      } else {
+        alert(data.error || "Failed to join");
+      }
+    } catch (err) {
+      console.error("Join error:", err);
+      alert("Error joining game");
     }
-  } catch (err) {
-    console.error("Join error:", err);
-    alert("Error joining game");
-  }
-};
+  };
 
   const loginHost = async () => {
     try {
@@ -76,24 +76,71 @@ function App() {
     }
   };
 
-  {ticketNumbers && (
-      <div style={{ marginTop: "20px" }}>
-        <h2>Your Ticket</h2>
-        <table border="1" style={{ margin: "auto" }}>
-          <tbody>
-            {ticketNumbers.map((row, rIdx) => (
-              <tr key={rIdx}>
-                {row.map((num, cIdx) => (
-                  <td key={cIdx} style={{ padding: "10px", width: "40px" }}>
-                    {num || ""}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  return (
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
+      <h1>CHAOBI HOUSIE</h1>
+
+      {/* Player Join */}
+      <div>
+        <input
+          placeholder="Your name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <select value={ticket} onChange={(e) => setTicket(e.target.value)}>
+          {Array.from({ length: 600 }, (_, i) => (
+            <option key={i}>Ticket #{i + 1}</option>
+          ))}
+        </select>
+        <button onClick={joinGame}>Join Game</button>
       </div>
-)};
+
+      {/* Host Login */}
+      <div style={{ marginTop: "20px" }}>
+        <input
+          placeholder="Host password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button onClick={loginHost}>Login as Host</button>
+      </div>
+
+      {/* 🎟️ Show Player Ticket */}
+      {ticketNumbers && (
+        <div style={{ marginTop: "20px" }}>
+          <h2>Your Ticket</h2>
+          <table border="1" style={{ margin: "auto" }}>
+            <tbody>
+              {ticketNumbers.map((row, rIdx) => (
+                <tr key={rIdx}>
+                  {row.map((num, cIdx) => (
+                    <td key={cIdx} style={{ padding: "10px", width: "40px" }}>
+                      {num || ""}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Host View */}
+      {isHost && (
+        <div style={{ marginTop: "30px" }}>
+          <h2>Players Joined</h2>
+          <ul>
+            {players.map((p, idx) => (
+              <li key={idx}>
+                {p.name} ({p.ticket})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default App;
