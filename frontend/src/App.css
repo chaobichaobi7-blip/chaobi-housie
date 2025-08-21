@@ -1,129 +1,99 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-}
-
-.App {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  margin: 0;
+  padding: 0;
+  text-align: center;
 }
 
 .header {
-  text-align: center;
-  margin-bottom: 16px;
-}
-.trophy {
-  width: 64px;
-  height: 64px;
-}
-.join-box {
-  display: grid;
-  gap: 8px;
-  max-width: 420px;
-  margin: 0 auto 16px;
-}
-.join-box input, .join-box select, .join-box button {
+  background: #ffcc00;
   padding: 10px;
-  font-size: 16px;
-}
-.join-box .inline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
-.host-controls {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin: 12px 0 20px;
+.trophy {
+  width: 40px;
 }
-.start-btn, .reset-btn {
-  padding: 10px 14px;
-  font-size: 16px;
-  border: 0;
-  border-radius: 8px;
+
+.join-box {
+  margin: 20px;
+}
+
+button {
+  margin: 5px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #007bff;
+  color: white;
   cursor: pointer;
 }
-.start-btn { background: #3b82f6; color: #fff; }
-.reset-btn { background: #ef4444; color: #fff; }
 
-.dashboard {
-  margin: 10px 0 20px;
-  text-align: center;
+button:hover {
+  background: #0056b3;
 }
-.latest {
-  font-size: 1.4rem;
-  margin-bottom: 10px;
-  font-weight: bold;
+
+.current-number {
+  font-size: 24px;
+  margin: 15px;
 }
-.latest span {
-  color: #e63946;
-}
-.numbers-grid {
+
+.numbers-board {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  gap: 6px;
-  max-width: 520px;
-  margin: 0 auto;
+  gap: 5px;
+  margin: 20px;
 }
-.num-cell {
+
+.board-cell {
+  border: 1px solid #ccc;
   padding: 8px;
-  text-align: center;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-weight: bold;
-  background: #f8f8f8;
+  background: white;
+  border-radius: 4px;
 }
-.num-cell.called {
+
+.board-cell.marked {
   background: #4caf50;
   color: white;
-  border-color: #388e3c;
 }
 
-.my-tickets, .player-list, .winners, .prizes {
-  margin: 18px 0;
+.board-cell.current {
+  background: #ff5722;
+  color: white;
 }
 
-.ticket {
+.my-ticket {
+  margin: 20px auto;
   display: inline-block;
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  margin: 10px 10px 18px 0;
-  padding: 10px;
-  background: #fff;
 }
-.row {
-  display: grid;
-  grid-template-columns: repeat(9, 32px);
-  gap: 4px;
-  margin: 3px 0;
+
+.my-ticket .row {
+  display: flex;
 }
-.cell {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-  background: #fafafa;
-  font-weight: 600;
+
+.my-ticket .cell {
+  width: 35px;
+  height: 35px;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.cell.marked {
+
+.my-ticket .cell.marked {
   background: #4caf50;
   color: white;
 }
 
-.player {
-  margin-bottom: 12px;
+.prizes {
+  margin: 20px;
 }
 
-.prize-item {
-  padding: 8px;
-  border-radius: 8px;
-  margin: 6px 0;
+.prizes .won {
+  color: green;
+  font-weight: bold;
 }
-.prize-item.pending { background: #fff7ed; border: 1px solid #fed7aa; }
-.prize-item.won { background: #ecfdf5; border: 1px solid #a7f3d0; }
 
-.winner-line { margin: 4px 0; }
+.prizes .pending {
+  color: orange;
+}
