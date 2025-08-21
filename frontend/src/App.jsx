@@ -99,6 +99,25 @@ function App() {
       {/* ✅ Player list (visible to everyone) */}
       <Ticket players={players} />
     </div>
+    {/* Player Ticket */}
+{ticketNumbers && (
+  <div style={{ marginTop: "20px" }}>
+    <h2>Your Ticket</h2>
+    <table border="1" style={{ margin: "auto" }}>
+      <tbody>
+        {ticketNumbers.map((row, rIdx) => (
+          <tr key={rIdx}>
+            {row.map((num, cIdx) => (
+              <td key={cIdx} style={{ padding: "10px", width: "40px" }}>
+                {num || ""}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
   );
 }
 
