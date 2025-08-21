@@ -3,7 +3,8 @@ import io from 'socket.io-client';
 import './App.css';
 
 // 🔗 Point this to your deployed backend or local server
-const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:3001');
+const socket = io("https://chaobi-housie.onrender.com");
+
 
 function App() {
   const [name, setName] = useState('');
