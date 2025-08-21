@@ -1,5 +1,5 @@
 {
-  "name": "chaobi-housie",
+  "name": "housie-frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "socket.io-client": "^4.7.5"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "socket.io-client": "^4.7.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.4"
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0"
   }
 }
