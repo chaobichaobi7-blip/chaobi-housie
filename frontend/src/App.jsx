@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import JoinForm from "./components/JoinForm";
 import HostLogin from "./components/HostLogin";
-import Tickets from "./components/Tickets";
+import Ticket from "./components/Ticket";
 
 function App() {
   const [name, setName] = useState("");
