@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import io from "socket.io-client";
 import "./App.css";
 
+// 🔗 Connect to your deployed backend
 const socket = io("https://chaobi-housie.onrender.com");
 
 function App() {
@@ -11,43 +12,48 @@ function App() {
   const [ticket, setTicket] = useState(null);
   const [ticketNumber, setTicketNumber] = useState(null);
   const [calledNumbers, setCalledNumbers] = useState([]);
-  const [currentNumber, setCurrentNumber] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [playersList, setPlayersList] = useState([]);
   const [winners, setWinners] = useState([]);
   const [prizes, setPrizes] = useState([]);
+  const [currentNumber, setCurrentNumber] = useState(null);
 
   useEffect(() => {
     socket.on("ticket", setTicket);
     socket.on("ticket-number", setTicketNumber);
+
     socket.on("number-called", (num) => {
       setCalledNumbers((prev) => [...prev, num]);
       setCurrentNumber(num);
+
+      // Play sound (optional)
+      const audio = new Audio(`/sounds/${num}.mp3`);
+      audio.play().catch(() => {});
     });
-    socket.on("update-board", ({ calledNumbers, currentNumber }) => {
-      setCalledNumbers(calledNumbers);
-      setCurrentNumber(currentNumber);
-    });
+
     socket.on("game-started", (data) => {
       setCalledNumbers([]);
       setWinners([]);
       setPrizes(data.prizes);
+      setCurrentNumber(null);
       alert("🎯 Game Started!");
     });
+
     socket.on("game-reset", () => {
       setCalledNumbers([]);
       setWinners([]);
-      setPlayersList([]);
-      setHasJoined(false);
-      setTicket(null);
-      setTicketNumber(null);
-      alert("♻️ Game Reset! Please rejoin.");
+      setCurrentNumber(null);
+      alert("♻️ Game Reset! Waiting for host to start.");
     });
+
+    socket.on("game-ended", () => alert("🏁 Game Ended!"));
     socket.on("players-list", setPlayersList);
     socket.on("winner", (data) => setWinners((prev) => [...prev, data]));
     socket.on("error-message", alert);
 
-    return () => socket.off();
+    return () => {
+      socket.off();
+    };
   }, []);
 
   const joinGame = () => {
@@ -57,18 +63,16 @@ function App() {
     setHasJoined(true);
   };
 
-  const claimPrize = (prize) => {
-    socket.emit("claim-prize", { prize });
-  };
-
   return (
     <div className="App">
+      {/* HEADER */}
       <div className="header">
         <img src="/trophy.png" alt="trophy" className="trophy" />
         <h1>CHAOBI HOUSIE</h1>
         <p>Chance to win ultimate prize</p>
       </div>
 
+      {/* JOIN FORM */}
       {!hasJoined && (
         <div className="join-box">
           <input
@@ -86,50 +90,49 @@ function App() {
         </div>
       )}
 
+      {/* HOST CONTROLS */}
       {isHost && (
         <div className="host-controls">
-          <button onClick={() => socket.emit("start-game")}>▶️ Start Game</button>
+          <button
+            onClick={() => socket.emit("start-game")}
+            className="start-btn"
+          >
+            ▶️ Start Game
+          </button>
           <button
             onClick={() => {
               if (window.confirm("Are you sure you want to reset the game?")) {
                 socket.emit("reset-game");
               }
             }}
+            className="reset-btn"
           >
             ♻️ Reset Game
-          </button>
-          <button onClick={() => socket.emit("call-number")}>
-            🎲 Call Number
           </button>
         </div>
       )}
 
+      {/* CURRENT NUMBER */}
       {currentNumber && (
-        <div className="current-number">🎲 Current Number: {currentNumber}</div>
+        <div className="current-number">
+          <h2>🎲 Current Number: {currentNumber}</h2>
+        </div>
       )}
 
-      <div className="numbers-board">
-        {Array.from({ length: 90 }, (_, i) => i + 1).map((num) => (
-          <div
-            key={num}
-            className={`board-cell ${
-              calledNumbers.includes(num) ? "marked" : ""
-            } ${currentNumber === num ? "current" : ""}`}
-          >
-            {num}
-          </div>
-        ))}
-      </div>
-
+      {/* MY TICKET */}
       {ticket && (
         <div className="my-ticket">
-          <h3>Your Ticket #{String(ticketNumber).padStart(3, "0")}</h3>
+          <h3>
+            🎟 My Ticket (#{String(ticketNumber).padStart(3, "0")})
+          </h3>
           {ticket.map((row, ri) => (
             <div key={ri} className="row">
               {row.map((num, ci) => (
                 <div
                   key={ci}
-                  className={`cell ${calledNumbers.includes(num) ? "marked" : ""}`}
+                  className={`cell ${
+                    calledNumbers.includes(num) ? "marked" : ""
+                  }`}
                 >
                   {num || ""}
                 </div>
@@ -137,34 +140,38 @@ function App() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* ALL PLAYERS LIST */}
       {playersList.length > 0 && (
-  <div className="all-tickets">
-    <h3>🎫 All Tickets</h3>
-    {playersList.map((player, i) => (
-      <div key={i} className="player-ticket">
-        <h4>
-          {player.name} (Ticket #{String(player.ticketNumber).padStart(3, "0")})
-        </h4>
-        {player.ticket.map((row, ri) => (
-          <div key={ri} className="row">
-            {row.map((num, ci) => (
-              <div
-                key={ci}
-                className={`cell ${
-                  calledNumbers.includes(num) ? "marked" : ""
-                }`}
-              >
-                {num || ""}
+        <div className="player-list">
+          <h3>📋 All Players</h3>
+          {playersList.map((p, i) => (
+            <div key={i} className="player-ticket">
+              <strong>{p.name}</strong> (Ticket #
+              {String(p.ticketNumber).padStart(3, "0")})
+              <div className="ticket">
+                {p.ticket.map((row, ri) => (
+                  <div key={ri} className="row">
+                    {row.map((num, ci) => (
+                      <div
+                        key={ci}
+                        className={`cell ${
+                          calledNumbers.includes(num) ? "marked" : ""
+                        }`}
+                      >
+                        {num || ""}
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    ))}
-  </div>
-)}
+            </div>
+          ))}
+        </div>
+      )}
 
-
+      {/* WINNERS */}
       {winners.length > 0 && (
         <div className="winners">
           <h3>🎉 Winners</h3>
@@ -177,6 +184,7 @@ function App() {
         </div>
       )}
 
+      {/* PRIZES LIST */}
       {prizes.length > 0 && (
         <div className="prizes">
           <h3>🏆 Prizes</h3>
@@ -184,10 +192,7 @@ function App() {
             const won = winners.find((w) => w.prize === pz);
             return (
               <div key={i} className={won ? "won" : "pending"}>
-                {pz}{" "}
-                {won ? `✅ Won by ${won.name}` : (
-                  <button onClick={() => claimPrize(pz)}>Claim</button>
-                )}
+                {pz} {won ? `✅ Won by ${won.name}` : "⏳ Yet to be won"}
               </div>
             );
           })}
