@@ -1,47 +1,46 @@
 import express from "express";
-import http from "http";
+import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 
 const app = express();
-app.use(cors());
-
-const server = http.createServer(app);
+const server = createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-let players = {}; // { socketId: { name, ticket } }
+app.use(cors());
+
+let players = {}; // { socketId: { name, ticketNumber } }
 let calledNumbers = [];
-let currentNumber = null;
+
+const HOST_PASSWORD = "admin123"; // fixed host password
 
 io.on("connection", (socket) => {
-  console.log("Player connected:", socket.id);
+  console.log("A user connected:", socket.id);
 
-  socket.on("joinGame", ({ name, ticket }) => {
-    players[socket.id] = { name, ticket };
-    io.emit("playersUpdate", players);
+  // Player joins with name + ticket
+  socket.on("joinGame", ({ name, ticketNumber }) => {
+    players[socket.id] = { name, ticketNumber };
+    io.emit("playersUpdate", players); // send to all players
   });
 
-  socket.on("callNumber", () => {
-    if (calledNumbers.length >= 90) return;
-    let num;
-    do {
-      num = Math.floor(Math.random() * 90) + 1;
-    } while (calledNumbers.includes(num));
-    calledNumbers.push(num);
-    currentNumber = num;
-    io.emit("numberCalled", { num, calledNumbers });
+  // Host calls a number
+  socket.on("callNumber", ({ number, password }) => {
+    if (password !== HOST_PASSWORD) {
+      socket.emit("errorMessage", "Invalid host password!");
+      return;
+    }
+    if (!calledNumbers.includes(number)) {
+      calledNumbers.push(number);
+      io.emit("numberCalled", { number, calledNumbers });
+    }
   });
 
-  socket.on("resetGame", () => {
-    players = {};
-    calledNumbers = [];
-    currentNumber = null;
-    io.emit("gameReset");
-    io.emit("playersUpdate", players);
-  });
-
+  // Disconnect
   socket.on("disconnect", () => {
     delete players[socket.id];
     io.emit("playersUpdate", players);
@@ -49,8 +48,8 @@ io.on("connection", (socket) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Housie Backend is running!");
+  res.send("Backend running for Housie Game 🎉");
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
