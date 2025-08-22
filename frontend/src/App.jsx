@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import JoinForm from "./components/JoinForm";
-import HostLogin from "./components/HostLogin";
-import Ticket from "./components/Ticket";
 
 function App() {
-  const [name, setName] = useState("");
-  const [ticket, setTicket] = useState("Ticket #1");
-  const [password, setPassword] = useState("");
   const [players, setPlayers] = useState([]);
+  const [bookedTickets, setBookedTickets] = useState([]);
+  const [name, setName] = useState("");
+  const [myTicket, setMyTicket] = useState(null);
+
   const [isHost, setIsHost] = useState(false);
-  const [ticketNumbers, setTicketNumbers] = useState(null);
+  const [password, setPassword] = useState("");
+  const [gameStarted, setGameStarted] = useState(false);
 
   const API_BASE = "https://chaobi-housie.onrender.com";
 
@@ -19,6 +18,20 @@ function App() {
 
     socket.on("playerJoined", (player) => {
       setPlayers((prev) => [...prev, player]);
+      setBookedTickets((prev) => [...prev, player.ticketNumber]);
+    });
+
+    socket.on("gameReset", () => {
+      setPlayers([]);
+      setBookedTickets([]);
+      setMyTicket(null);
+      setGameStarted(false);
+      alert("Game has been reset!");
+    });
+
+    socket.on("gameStarted", () => {
+      setGameStarted(true);
+      alert("Game started!");
     });
 
     fetchPlayers();
@@ -26,18 +39,35 @@ function App() {
     return () => socket.disconnect();
   }, []);
 
-  const joinGame = async () => {
+  const fetchPlayers = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/players`);
+      const data = await res.json();
+      setPlayers(data);
+      setBookedTickets(data.map((p) => p.ticketNumber));
+    } catch (err) {
+      console.error("Fetch players error:", err);
+    }
+  };
+
+  const joinGame = async (ticketNumber) => {
+    if (!name.trim()) {
+      alert("Enter your name first!");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, ticket }),
+        body: JSON.stringify({ name, ticket: `Ticket #${ticketNumber}` }),
       });
 
       const data = await res.json();
       if (data.success) {
-        setTicketNumbers(data.ticketData); // 🎟️ save full ticket
-        alert("Joined game successfully!");
+        setMyTicket(ticketNumber);
+        setBookedTickets((prev) => [...prev, ticketNumber]);
+        alert(`You booked Ticket #${ticketNumber}`);
       } else {
         alert(data.error || "Failed to join");
       }
@@ -57,7 +87,6 @@ function App() {
       const data = await res.json();
       if (data.success) {
         setIsHost(true);
-        fetchPlayers();
       } else {
         alert("Invalid host password");
       }
@@ -66,77 +95,134 @@ function App() {
     }
   };
 
-  const fetchPlayers = async () => {
+  const resetGame = async () => {
     try {
-      const res = await fetch(`${API_BASE}/players`);
-      const data = await res.json();
-      setPlayers(data);
+      await fetch(`${API_BASE}/reset`, { method: "POST" });
     } catch (err) {
-      console.error("Fetch players error:", err);
+      console.error("Reset error:", err);
     }
   };
 
+  const startGame = async () => {
+    try {
+      await fetch(`${API_BASE}/start`, { method: "POST" });
+    } catch (err) {
+      console.error("Start error:", err);
+    }
+  };
+
+  // 🔹 Render all tickets
+  const renderTicketGrid = () => (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(20, 1fr)", // 20 per row
+        gap: "5px",
+        maxWidth: "95%",
+        margin: "auto",
+      }}
+    >
+      {Array.from({ length: 600 }, (_, i) => {
+        const ticketNum = i + 1;
+        const player = players.find((p) => p.ticketNumber === ticketNum);
+        const isBooked = !!player;
+        const isMine = myTicket === ticketNum;
+
+        const canBook = !gameStarted && !isBooked;
+
+        return (
+          <button
+            key={ticketNum}
+            onClick={() => canBook && joinGame(ticketNum)}
+            disabled={!canBook}
+            style={{
+              padding: "6px",
+              fontSize: "11px",
+              backgroundColor: isMine
+                ? "lightgreen"
+                : isBooked
+                ? "lightcoral"
+                : gameStarted
+                ? "#ddd" // grey for unbooked tickets once game started
+                : "white",
+              border: "1px solid #444",
+              borderRadius: "6px",
+              minHeight: "45px",
+              cursor: canBook ? "pointer" : "not-allowed",
+            }}
+          >
+            <div style={{ fontWeight: "bold" }}>#{ticketNum}</div>
+            <div style={{ fontSize: "10px" }}>
+              {player ? player.name : ""}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
+    <div style={{ textAlign: "center", marginTop: "20px" }}>
       <h1>CHAOBI HOUSIE</h1>
 
-      {/* Player Join */}
-      <div>
-        <input
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <select value={ticket} onChange={(e) => setTicket(e.target.value)}>
-          {Array.from({ length: 600 }, (_, i) => (
-            <option key={i}>Ticket #{i + 1}</option>
-          ))}
-        </select>
-        <button onClick={joinGame}>Join Game</button>
-      </div>
-
-      {/* Host Login */}
-      <div style={{ marginTop: "20px" }}>
-        <input
-          placeholder="Host password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button onClick={loginHost}>Login as Host</button>
-      </div>
-
-      {/* 🎟️ Show Player Ticket */}
-      {ticketNumbers && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>Your Ticket</h2>
-          <table border="1" style={{ margin: "auto" }}>
-            <tbody>
-              {ticketNumbers.map((row, rIdx) => (
-                <tr key={rIdx}>
-                  {row.map((num, cIdx) => (
-                    <td key={cIdx} style={{ padding: "10px", width: "40px" }}>
-                      {num || ""}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Name input for players (before game starts) */}
+      {!isHost && !gameStarted && (
+        <div style={{ marginBottom: "20px" }}>
+          <input
+            placeholder="Enter your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
       )}
 
-      {/* Host View */}
+      {/* All players & host see the ticket grid */}
+      {renderTicketGrid()}
+
+      {/* Host Login */}
+      {!isHost && (
+        <div style={{ marginTop: "20px" }}>
+          <input
+            placeholder="Host password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button onClick={loginHost}>Login as Host</button>
+        </div>
+      )}
+
+      {/* Host Controls */}
       {isHost && (
         <div style={{ marginTop: "30px" }}>
-          <h2>Players Joined</h2>
-          <ul>
-            {players.map((p, idx) => (
-              <li key={idx}>
-                {p.name} ({p.ticket})
-              </li>
-            ))}
-          </ul>
+          <h2>Host Controls</h2>
+          <button
+            onClick={startGame}
+            style={{
+              padding: "10px 20px",
+              marginRight: "10px",
+              backgroundColor: "lightgreen",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            Start Game
+          </button>
+          <button
+            onClick={resetGame}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "orange",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            Reset Game
+          </button>
         </div>
       )}
     </div>
