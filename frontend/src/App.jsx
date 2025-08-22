@@ -195,7 +195,7 @@ export default function App() {
   // Pre-generate all 600 ticket layouts (memoized once)
   const layouts = useMemo(() => {
     const map = new Map();
-    for (let i = 1; i <= 600; i++) map.set(i, genTicket(i));
+    for (let i = 1; i <= 20; i++) map.set(i, genTicket(i));
     return map;
   }, []);
 
