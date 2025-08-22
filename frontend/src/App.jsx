@@ -390,7 +390,7 @@ export default function App() {
             Reset Game
           </button>
           <div style={{ marginTop: 8, fontSize: 12 }}>
-            Booked: {players.length} / 600
+            Booked: {players.length} / 20
           </div>
         </div>
       )}
@@ -407,7 +407,7 @@ export default function App() {
           margin: "0 auto",
         }}
       >
-        {Array.from({ length: 600 }, (_, i) => {
+        {Array.from({ length: 20 }, (_, i) => {
           const ticketNumber = i + 1;
           const bookedBy = playerByTicket(ticketNumber);
           const isMine = myTicket === ticketNumber;
